@@ -22,7 +22,7 @@ const (
 							  "inputs": [
 								{"indexed": true, "name": "from", "type": "address"},
 								{"indexed": true, "name": "to", "type": "address"},
-								{"indexed": false, "name": "tokens", "type": "uint256"}
+								{"indexed": false, "name": "value", "type": "uint256"}
 							  ],
 							  "name": "Transfer",
 							  "type": "event"
@@ -30,9 +30,7 @@ const (
 )
 
 type TransferEvent struct {
-	From   common.Address
-	To     common.Address
-	Tokens *big.Int
+	Value *big.Int
 }
 
 func main() {
@@ -74,7 +72,11 @@ func main() {
 					continue
 				}
 
-				fmt.Printf("Received USDT Transfer Event: From %s, To %s, Tokens %s\n", event.From.Hex(), event.To.Hex(), event.Tokens.String())
+				from := common.HexToAddress(vLog.Topics[1].Hex())
+				to := common.HexToAddress(vLog.Topics[2].Hex())
+
+				fmt.Printf("Received USDT Transfer Event: From %s, To %s, Tokens %s\n", from,
+					to, (event.Value.Div(event.Value, big.NewInt(1000000))).String())
 			}
 		}
 	}()
