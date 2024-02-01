@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"erc20-listener/util"
 	"fmt"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -9,15 +10,15 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"log"
+	"math"
 	"math/big"
+	"strconv"
 	"strings"
 	"sync"
 )
 
 const (
-	ethereumNodeURL     = "wss://mainnet.infura.io/ws/v3/76e1210cd141441da26a50f5f14735eb"
-	usdtContractAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
-	contractAbi         = `[{
+	contractAbi = `[{
 							  "anonymous": false,
 							  "inputs": [
 								{"indexed": true, "name": "from", "type": "address"},
@@ -34,12 +35,17 @@ type TransferEvent struct {
 }
 
 func main() {
-	client, err := ethclient.Dial(ethereumNodeURL)
+	config, err := util.LoadConfig(".")
+	if err != nil {
+		log.Fatal("Error loading app.env file" + err.Error())
+	}
+
+	client, err := ethclient.Dial(config.EthNodeURL)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	contractAddress := common.HexToAddress(usdtContractAddress)
+	contractAddress := common.HexToAddress(config.ContractAddr)
 	usdtAbi, err := abi.JSON(strings.NewReader(contractAbi))
 	if err != nil {
 		log.Fatal(err)
@@ -75,8 +81,15 @@ func main() {
 				from := common.HexToAddress(vLog.Topics[1].Hex())
 				to := common.HexToAddress(vLog.Topics[2].Hex())
 
-				fmt.Printf("Received USDT Transfer Event: From %s, To %s, Tokens %s\n", from,
-					to, (event.Value.Div(event.Value, big.NewInt(1000000))).String())
+				tokens, _ := event.Value.Float64()
+				tokDec, err := strconv.Atoi(config.TokenDecimal)
+				if err != nil {
+					log.Println("Invalid token decimal")
+					tokDec = 0
+				}
+				tokens *= math.Pow(0.1, float64(tokDec))
+
+				fmt.Printf("Received Transfer Event: From %s, To %s, Tokens %f\n", from, to, tokens)
 			}
 		}
 	}()
