@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
+	"erc20-listener/erc20"
 	"erc20-listener/util"
 	"fmt"
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -13,21 +13,7 @@ import (
 	"math"
 	"math/big"
 	"strconv"
-	"strings"
 	"sync"
-)
-
-const (
-	contractAbi = `[{
-							  "anonymous": false,
-							  "inputs": [
-								{"indexed": true, "name": "from", "type": "address"},
-								{"indexed": true, "name": "to", "type": "address"},
-								{"indexed": false, "name": "value", "type": "uint256"}
-							  ],
-							  "name": "Transfer",
-							  "type": "event"
-							}]`
 )
 
 type TransferEvent struct {
@@ -46,10 +32,14 @@ func main() {
 	}
 
 	contractAddress := common.HexToAddress(config.ContractAddr)
-	usdtAbi, err := abi.JSON(strings.NewReader(contractAbi))
+	usdtAbi, err := erc20.Erc20MetaData.GetAbi()
 	if err != nil {
 		log.Fatal(err)
 	}
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	query := ethereum.FilterQuery{
 		Addresses: []common.Address{contractAddress},
 		Topics:    [][]common.Hash{{usdtAbi.Events["Transfer"].ID}},
